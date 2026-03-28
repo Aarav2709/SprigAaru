@@ -2,8 +2,8 @@
     @title: AarusPlatformer
     @description: A 2D platformer game where players navigate through levels, collect coins, and avoid spikes.
     @author: Aarav Gupta
-    @tags: ['platformer']
-    @addedOn: 2025-08-30
+    @tags: [Platformer, Adventure, Singleplayer]
+    @addedOn: 2025-06-16
     */
 
     // Define sprites
