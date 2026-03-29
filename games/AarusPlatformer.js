@@ -330,6 +330,8 @@ wwwwwwwwwwwwwwGw`
     let gameState = gameStatePlaying;
     let levelTimeMs = 0;
     let totalTimeMs = 0;
+    let levelTimerStarted = false;
+    let coinsCollectedThisLevel = 0;
     let gameLoop = null;
 
     function startGameLoop() {
@@ -337,8 +339,10 @@ wwwwwwwwwwwwwwGw`
 
     gameLoop = setInterval(() => {
         if (gameState === gameStatePlaying || gameState === gameStateRespawning) {
-        levelTimeMs += tickMs;
         totalTimeMs += tickMs;
+        if (levelTimerStarted) {
+            levelTimeMs += tickMs;
+        }
         }
 
         if (gameState !== gameStatePlaying) {
@@ -448,6 +452,7 @@ wwwwwwwwwwwwwwGw`
         if (coinsAtPlayer.length > 0) {
         coinsAtPlayer.forEach(coinSprite => {
             coinSprite.remove();
+            coinsCollectedThisLevel += 1;
             playTune(tune`
         37.5: C5^37.5,
         1125`);
@@ -464,7 +469,7 @@ wwwwwwwwwwwwwwGw`
 
         clearText();
         addText("Don't lose hope.", { x: 2, y: 0, color: color`2` });
-        addText("Respawning...", { x: 2, y: 15, color: color`2` });
+        addText("Respawning!", { x: 5, y: 15, color: color`2` });
 
         setTimeout(() => {
             if (gameState === gameStateRespawning) {
@@ -497,6 +502,10 @@ wwwwwwwwwwwwwwGw`
     }
 
     afterInput(() => {
+    if (gameState === gameStatePlaying && !levelTimerStarted) {
+        levelTimerStarted = true;
+    }
+
     if (gameState === gameStatePlaying) {
         checkCollisions();
         updateUI();
@@ -511,8 +520,10 @@ wwwwwwwwwwwwwwGw`
     playerVelocityY = 0;
     playerOnGround = false;
     gameState = gameStatePlaying;
+    coinsCollectedThisLevel = 0;
     if (resetLevelTime) {
         levelTimeMs = 0;
+        levelTimerStarted = false;
     }
     updateUI();
     }
@@ -521,6 +532,7 @@ wwwwwwwwwwwwwwGw`
     level = 0;
     totalTimeMs = 0;
     levelTimeMs = 0;
+    levelTimerStarted = false;
     playerVelocityY = 0;
     playerOnGround = false;
     gameState = gameStatePlaying;
@@ -541,9 +553,10 @@ wwwwwwwwwwwwwwGw`
     if (gameState !== gameStatePlaying) return;
 
     clearText();
-    addText(`L ${formatTime(levelTimeMs)}`, { x: 0, y: 0, color: color`3` });
-    addText(`T ${formatTime(totalTimeMs)}`, { x: 9, y: 0, color: color`6` });
-    addText(`Level:${level + 1}/${levels.length}`, { x: 1, y: 15, color: color`4` });
+    addText(`L - ${formatTime(levelTimeMs)}`, { x: 0, y: 0, color: color`3` });
+    addText(`//`, {x: 9, y: 0, color: `5`});
+    addText(`T - ${formatTime(totalTimeMs)}`, { x: 12, y: 0, color: color`6` });
+    addText(`Level : ${level + 1}/${levels.length}`, { x: 4, y: 15, color: color`4` });
     }
 
     function showCompletionScreen() {
@@ -557,12 +570,18 @@ wwwwwwwwwwwwwwGw`
     setBackground(blackScreen);
     setMap(completionMap);
     clearText();
-    addText("Thank you", { x: 4, y: 5, color: color`2` });
-    addText("for playing", { x: 3, y: 7, color: color`2` });
-    addText("W: Play again", { x: 2, y: 10, color: color`4` });
+    addText("Thanks for", { x: 5, y: 5, color: color`2` });
+    addText("Playing!", { x: 6, y: 7, color: color`2` });
+    addText("W: Play Again", { x: 4, y: 10, color: color`4` });
     }
 
     function nextLevel() {
+    const timeBonusMs = coinsCollectedThisLevel * 1000;
+    if (timeBonusMs > 0) {
+        levelTimeMs = Math.max(0, levelTimeMs - timeBonusMs);
+        totalTimeMs = Math.max(0, totalTimeMs - timeBonusMs);
+    }
+
     level++;
     if (level >= levels.length) {
         showCompletionScreen();
