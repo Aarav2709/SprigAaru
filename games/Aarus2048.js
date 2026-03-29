@@ -211,6 +211,14 @@ function create_grid(empty = ".") {
   return empty_grid;
 }
 
+function clone_grid(source) {
+  const copy = [];
+  for (let x = 0; x < source.length; x++) {
+    copy.push(source[x].slice());
+  }
+  return copy;
+}
+
 function update_level() {
   clearText();
 
@@ -323,8 +331,8 @@ function shift_grid(is_vertical, down) {
     }
   }
 
-  grid = structuredClone(new_grid);
-  grid_values = structuredClone(new_grid_values);
+  grid = clone_grid(new_grid);
+  grid_values = clone_grid(new_grid_values);
   update_level();
 }
 
