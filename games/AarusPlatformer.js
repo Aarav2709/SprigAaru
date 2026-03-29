@@ -14,43 +14,44 @@
     const spike = "s";
     const goal = "G";
     const background = "b";
+    const blackScreen = "k";
 
     // Set legend
     setLegend(
     [player, bitmap`
-    ................
-    ................
-    .......000......
-    ......00000.....
-    ......0.0.0.....
-    ......00000.....
-    ......00000.....
-    .......000......
-    .......000......
-    ......00000.....
-    .....0000000....
-    ....000000000...
-    ......00000.....
-    ......0...0.....
-    .....00...00....
-    ....00.....00...`],
+................
+................
+.......000......
+......00000.....
+......0.0.0.....
+......00000.....
+......00000.....
+.......000......
+.......000......
+......00000.....
+.....0000000....
+....000000000...
+......00000.....
+......0...0.....
+.....00...00....
+....00.....00...`],
     [wall, bitmap`
-    LLLLLLLLLLLLLLLL
-    L11111111111111L
-    L1CCCCCCCCCCCC1L
-    L1C2222222222C1L
-    L1C2333333332C1L
-    L1C2333333332C1L
-    L1C2333333332C1L
-    L1C2333333332C1L
-    L1C2333333332C1L
-    L1C2333333332C1L
-    L1C2333333332C1L
-    L1C2333333332C1L
-    L1C2222222222C1L
-    L1CCCCCCCCCCCC1L
-    L11111111111111L
-    LLLLLLLLLLLLLLLL`],
+LLLLLLLLLLLLLLLL
+L11111111111111L
+L1CCCCCCCCCCCC1L
+L1C2222222222C1L
+L1C2333333332C1L
+L1C2333333332C1L
+L1C2333333332C1L
+L1C2333333332C1L
+L1C2333333332C1L
+L1C2333333332C1L
+L1C2333333332C1L
+L1C2333333332C1L
+L1C2222222222C1L
+L1CCCCCCCCCCCC1L
+L11111111111111L
+LLLLLLLLLLLLLLLL`],
     [ground, bitmap`
     4444444444444444
     4333333333333334
@@ -135,7 +136,24 @@
     7777777777777777
     7777777777777777
     7777777777777777
-    7777777777777777`]
+    7777777777777777`],
+    [blackScreen, bitmap`
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`]
     );
 
     // Set background
@@ -143,9 +161,6 @@
 
     // Game variables
     let level = 0;
-    let score = 0;
-    let playerStartX = 1;
-    let playerStartY = 6;
 
     // Define levels
     const levels = [
@@ -280,6 +295,19 @@ wsssssssssssss.w
 wwwwwwwwwwwwwwGw`
     ];
 
+    const completionMap = map`
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................`;
+
     // Set the first level
     setMap(levels[level]);
 
@@ -292,52 +320,85 @@ wwwwwwwwwwwwwwGw`
     const gravity = 0.5;
     const jumpPower = -8;
     const maxFallSpeed = 6;
+    const tickMs = 50;
+    const respawnDelayMs = 800;
 
-    // Game loop
-    let gameLoop = setInterval(() => {
-    // Apply gravity
-    if (!playerOnGround) {
+    const gameStatePlaying = "playing";
+    const gameStateRespawning = "respawning";
+    const gameStateCompleted = "completed";
+
+    let gameState = gameStatePlaying;
+    let levelTimeMs = 0;
+    let totalTimeMs = 0;
+    let gameLoop = null;
+
+    function startGameLoop() {
+    if (gameLoop) return;
+
+    gameLoop = setInterval(() => {
+        if (gameState === gameStatePlaying || gameState === gameStateRespawning) {
+        levelTimeMs += tickMs;
+        totalTimeMs += tickMs;
+        }
+
+        if (gameState !== gameStatePlaying) {
+        return;
+        }
+
+        // Apply gravity
+        if (!playerOnGround) {
         playerVelocityY += gravity;
         if (playerVelocityY > maxFallSpeed) {
-        playerVelocityY = maxFallSpeed;
+            playerVelocityY = maxFallSpeed;
         }
-    }
+        }
 
-    // Apply vertical movement
-    if (playerVelocityY != 0) {
+        // Apply vertical movement
+        if (playerVelocityY != 0) {
         let playerSprite = getFirst(player);
         if (playerSprite) {
-        let newY = playerSprite.y + Math.sign(playerVelocityY);
+            let newY = playerSprite.y + Math.sign(playerVelocityY);
 
-        // Check collision
-        if (newY >= 0 && newY < height()) {
+            // Check collision
+            if (newY >= 0 && newY < height()) {
             let testMove = { x: playerSprite.x, y: newY };
             let collision = getTile(testMove.x, testMove.y).some(sprite =>
-            sprite.type === wall || sprite.type === ground
+                sprite.type === wall || sprite.type === ground
             );
 
             if (!collision) {
-            playerSprite.y = newY;
-            playerOnGround = false;
+                playerSprite.y = newY;
+                playerOnGround = false;
             } else {
-            if (playerVelocityY > 0) {
+                if (playerVelocityY > 0) {
                 // Landing
                 playerOnGround = true;
+                }
+                playerVelocityY = 0;
             }
+            } else {
             playerVelocityY = 0;
             }
-        } else {
-            playerVelocityY = 0;
         }
         }
-    }
 
-    // Check collisions every frame, not just on input
-    checkCollisions();
-    }, 50);
+        // Check collisions every frame, not just on input
+        checkCollisions();
+        updateUI();
+    }, tickMs);
+    }
 
     // Input handling
     onInput("w", () => {
+    if (gameState === gameStateCompleted) {
+        restartGame();
+        return;
+    }
+
+    if (gameState !== gameStatePlaying) {
+        return;
+    }
+
     // Jump
     if (playerOnGround) {
         playerVelocityY = jumpPower;
@@ -346,6 +407,10 @@ wwwwwwwwwwwwwwGw`
     });
 
     onInput("a", () => {
+    if (gameState !== gameStatePlaying) {
+        return;
+    }
+
     // Move left
     let playerSprite = getFirst(player);
     if (playerSprite && playerSprite.x > 0) {
@@ -354,6 +419,10 @@ wwwwwwwwwwwwwwGw`
     });
 
     onInput("d", () => {
+    if (gameState !== gameStatePlaying) {
+        return;
+    }
+
     // Move right
     let playerSprite = getFirst(player);
     if (playerSprite && playerSprite.x < width() - 1) {
@@ -362,168 +431,141 @@ wwwwwwwwwwwwwwGw`
     });
 
     onInput("s", () => {
-    // Restart level or restart game if completed
-    if (level >= levels.length) {
-        restartGame();
-    } else {
+    if (gameState === gameStatePlaying) {
         restartLevel();
     }
     });
 
     // Collision detection
     function checkCollisions() {
+        if (gameState !== gameStatePlaying) return;
+
         let playerSprite = getFirst(player);
         if (!playerSprite) return;
 
         // Check for coin collection
         let coinsAtPlayer = getTile(playerSprite.x, playerSprite.y).filter(sprite => sprite.type === coin);
         if (coinsAtPlayer.length > 0) {
-            coinsAtPlayer.forEach(coinSprite => {
+        coinsAtPlayer.forEach(coinSprite => {
             coinSprite.remove();
-            score += 10;
-            // Update coin counter in real-time
-            updateUI();
             playTune(tune`
         37.5: C5^37.5,
         1125`);
-            });
+        });
         }
 
         // Check for spike collision
         let spikesAtPlayer = getTile(playerSprite.x, playerSprite.y).filter(sprite => sprite.type === spike);
         if (spikesAtPlayer.length > 0) {
-            // Reset score when player dies
-            score = 0;
-            // Death effect
-            clearText();
-            addText("Don't lose hope.", { x: 3, y: 0, color: color`2` });
-            addText("Respawning you.", { x: 3, y: 15, color: color`2` });
-            setTimeout(() => {
-            restartLevel();
-            }, 800);
-            playTune(tune`
+        gameState = gameStateRespawning;
+        playerVelocityY = 0;
+        playerOnGround = false;
+        playerSprite.remove();
+
+        clearText();
+        addText("Don't lose hope.", { x: 2, y: 0, color: color`2` });
+        addText("Respawning...", { x: 2, y: 15, color: color`2` });
+
+        setTimeout(() => {
+            if (gameState === gameStateRespawning) {
+            restartLevel(false);
+            }
+        }, respawnDelayMs);
+
+        playTune(tune`
         150: G4~150 + A4~150 + B4~150,
         150: F4~150 + G4~150 + A4~150,
         150: E4~150 + F4~150 + G4~150,
         4350`);
+        return;
         }
 
         // Check for goal
         let goalAtPlayer = getTile(playerSprite.x, playerSprite.y).filter(sprite => sprite.type === goal);
         if (goalAtPlayer.length > 0) {
-            nextLevel();
+        nextLevel();
+        return;
         }
 
         // Update ground detection
         if (playerSprite.y < height() - 1) {
-            let groundBelow = getTile(playerSprite.x, playerSprite.y + 1).some(sprite =>
+        let groundBelow = getTile(playerSprite.x, playerSprite.y + 1).some(sprite =>
             sprite.type === wall || sprite.type === ground
-            );
-            playerOnGround = groundBelow;
+        );
+        playerOnGround = groundBelow;
         }
     }
 
     afterInput(() => {
+    if (gameState === gameStatePlaying) {
         checkCollisions();
+        updateUI();
+    }
     });
 
     // Helper functions
-    function restartLevel() {
+    function restartLevel(resetLevelTime = true) {
     clearText();
+    setBackground(background);
     setMap(levels[level]);
     playerVelocityY = 0;
     playerOnGround = false;
+    gameState = gameStatePlaying;
+    if (resetLevelTime) {
+        levelTimeMs = 0;
+    }
     updateUI();
     }
 
     function restartGame() {
     level = 0;
-    score = 0;
+    totalTimeMs = 0;
+    levelTimeMs = 0;
     playerVelocityY = 0;
     playerOnGround = false;
-
-    // Restart game loop if it was stopped
-    if (!gameLoop) {
-        gameLoop = setInterval(() => {
-        // Apply gravity
-        if (!playerOnGround) {
-            playerVelocityY += gravity;
-            if (playerVelocityY > maxFallSpeed) {
-            playerVelocityY = maxFallSpeed;
-            }
-        }
-
-        // Apply vertical movement
-        if (playerVelocityY != 0) {
-            let playerSprite = getFirst(player);
-            if (playerSprite) {
-            let newY = playerSprite.y + Math.sign(playerVelocityY);
-
-            // Check collision
-            if (newY >= 0 && newY < height()) {
-                let testMove = { x: playerSprite.x, y: newY };
-                let collision = getTile(testMove.x, testMove.y).some(sprite =>
-                sprite.type === wall || sprite.type === ground
-                );
-
-                if (!collision) {
-                playerSprite.y = newY;
-                playerOnGround = false;
-                } else {
-                if (playerVelocityY > 0) {
-                    // Landing
-                    playerOnGround = true;
-                }
-                playerVelocityY = 0;
-                }
-            } else {
-                playerVelocityY = 0;
-            }
-            }
-        }
-
-        // Check collisions every frame, not just on input
-        checkCollisions();
-        }, 50);
-    }
-
+    gameState = gameStatePlaying;
+    setBackground(background);
+    startGameLoop();
     restartLevel();
     }
 
-    function updateUI() {
-    clearText();
-    // Simple yellow title at top
-    addText("AarusPlatformer", { x: 3, y: 0, color: color`3` });
+    function formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const paddedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
+    return `${minutes}:${paddedSeconds}`;
+    }
 
-    // Bottom UI - positioned 4 blocks lower
-    addText(`Coins:${score/10}`, { x: 0, y: 15, color: color`6` });
-    addText(`Level:${level + 1}/10`, { x: 10, y: 15, color: color`4` });
-    addText(`-`, { x: 8, y: 15, color: color`5` });
+    function updateUI() {
+    if (gameState !== gameStatePlaying) return;
+
+    clearText();
+    addText(`L ${formatTime(levelTimeMs)}`, { x: 0, y: 0, color: color`3` });
+    addText(`T ${formatTime(totalTimeMs)}`, { x: 9, y: 0, color: color`6` });
+    addText(`Level:${level + 1}/${levels.length}`, { x: 1, y: 15, color: color`4` });
+    }
+
+    function showCompletionScreen() {
+    gameState = gameStateCompleted;
+
+    if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+    }
+
+    setBackground(blackScreen);
+    setMap(completionMap);
+    clearText();
+    addText("Thank you", { x: 4, y: 5, color: color`2` });
+    addText("for playing", { x: 3, y: 7, color: color`2` });
+    addText("W: Play again", { x: 2, y: 10, color: color`4` });
     }
 
     function nextLevel() {
     level++;
     if (level >= levels.length) {
-        // Game completed
-        clearText();
-        addText("You Win!", { x: 6, y: 0, color: color`6` });
-
-        // Rating system
-        let rating = "";
-        if (score >= 60) rating = "Perfect!";
-        else if (score >= 40) rating = "Great!";
-        else if (score >= 20) rating = "Good!";
-        else rating = "Try Again";
-
-        // Bottom UI - score and rating
-        addText(`Score: ${score}`, { x: 0, y: 15, color: color`1` });
-        addText(`-`, { x: 11, y: 15, color: color`8` });
-        addText(rating, { x: 12, y: 15, color: color`7` });
-
-        // Stop the game loop and reset for restart
-        clearInterval(gameLoop);
-        level = 0;
-        score = 0;
+        showCompletionScreen();
 
         playTune(tune`
     150: C5^150,
@@ -544,4 +586,5 @@ wwwwwwwwwwwwwwGw`
     }
 
     // Initialize game
+    startGameLoop();
     restartLevel();
