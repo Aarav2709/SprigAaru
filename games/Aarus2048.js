@@ -226,7 +226,7 @@ function update_level() {
 
   const title = "Aaru's 2048";
   const stats = `S:${score} B:${best}`;
-    const bar = "====================";
+    const bar = "--------------------";
 
     // Thin top/bottom bars (1 text row each)
     addText(bar, { x: 0, y: 1, color: color`1` });
