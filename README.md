@@ -8,7 +8,7 @@ I use this repo to experiment with:
 - firmware and embedded work
 - game projects and prototypes
 
-<img src = "image/assembled.png">
+<img src = "images/assembled.png">
 
 # Some photos!
 
