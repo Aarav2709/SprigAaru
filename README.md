@@ -1,5 +1,4 @@
 # SprigAaru
-
 SprigAaru is my personal fork and playground based on Sprig.
 
 I use this repo to experiment with:
@@ -10,12 +9,7 @@ I use this repo to experiment with:
 
 <img src = "images/assembled.jpg">
 
-# Some photos!
-
-*Coming soon, lol! I mean I have the device assembled I'm just lazy to upload from mobile to github :D*
-
 ## Current Status
-
 This is a personal project where I build and test things as I learn.
 
 - The `games/` folder currently has my games, and more?
@@ -30,9 +24,9 @@ This is a personal project where I build and test things as I learn.
 - `hardware/`: hardware design files and references
 
 ## Upstream Credit
-
 This project builds on the open-source work from Hack Club's Sprig project.
 
 ## License
-
 This repository is licensed under the MIT License. See [LICENSE](./LICENSE).
+
+> The project has been archived due to the sprig getting bricked. I might fix it in the future if I get time <3
