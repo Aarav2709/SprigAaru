@@ -8,6 +8,8 @@ I use this repo to experiment with:
 - firmware and embedded work
 - game projects and prototypes
 
+<img src = "image/assembled.png">
+
 # Some photos!
 
 *Coming soon, lol! I mean I have the device assembled I'm just lazy to upload from mobile to github :D*
